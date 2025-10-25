@@ -23,7 +23,7 @@ const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
   const fileInputRef = useRef();
 
-  // 🌙 Live theme check
+  // 🌙 Live theme watcher
   useEffect(() => {
     const updateTheme = () =>
       setIsDark(document.documentElement.classList.contains("dark"));
@@ -37,16 +37,16 @@ const Dashboard = () => {
     return () => observer.disconnect();
   }, []);
 
-  // 🧩 Load Profile
+  // 🧩 Load Profile from backend
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data } = await api.get("/users/profile", {
+        const { data } = await api.get("/api/users/profile", {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setProfileData(data);
       } catch (err) {
-        console.error(err);
+        console.error("❌ Failed to load profile:", err);
         toast.error("Failed to load profile ❌");
       }
     };
@@ -61,7 +61,7 @@ const Dashboard = () => {
     formData.append("profilePic", file);
 
     try {
-      const { data } = await api.post("/users/upload", formData, {
+      const { data } = await api.post("/api/users/upload", formData, {
         headers: {
           Authorization: `Bearer ${user.token}`,
           "Content-Type": "multipart/form-data",
@@ -75,7 +75,7 @@ const Dashboard = () => {
     }
   };
 
-  // ☎️ WhatsApp input formatter
+  // ☎️ WhatsApp formatter
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.startsWith("91")) value = value.slice(2);
@@ -93,7 +93,7 @@ const Dashboard = () => {
     });
   };
 
-  // 📚 Stream Short Code Map
+  // 📚 Stream Short Map
   const streamShortMap = {
     "Computer Science and Engineering": "CSE",
     "Artificial Intelligence and Data Science": "AIDS",
@@ -111,13 +111,12 @@ const Dashboard = () => {
       return;
     }
 
-    // convert full stream name → short form
     const shortStream =
       streamShortMap[profileData.stream] || profileData.stream;
 
     try {
       const { data } = await api.put(
-        "/users/profile",
+        "/api/users/profile",
         {
           ...profileData,
           stream: shortStream,
@@ -125,6 +124,7 @@ const Dashboard = () => {
         },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
+
       login(data);
       setPreview(null);
       setIsEditing(false);
@@ -170,7 +170,7 @@ const Dashboard = () => {
             : "border-gray-200 bg-white/80"
         }`}
       >
-        {/* 👤 Profile Pic */}
+        {/* 👤 Profile Picture */}
         <div className="flex flex-col items-center mb-6">
           <div className="relative group">
             <motion.img
@@ -295,29 +295,17 @@ const Dashboard = () => {
                 }`}
               >
                 <option value="">Select Stream</option>
-                <option value="Computer Science and Engineering">
-                  Computer Science and Engineering
-                </option>
-                <option value="Artificial Intelligence and Data Science">
-                  Artificial Intelligence and Data Science
-                </option>
-                <option value="Information Technology">
-                  Information Technology In Engineering
-                </option>
-                <option value="Electronics and Communication Engineering">
-                  Electronics and Communication Engineering
-                </option>
-                <option value="Electrical and Electronics Engineering">
-                  Electrical and Electronics Engineering
-                </option>
-                <option value="Mechanical Engineering">
-                  Mechanical Engineering
-                </option>
+                <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                <option value="Artificial Intelligence and Data Science">Artificial Intelligence and Data Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Electronics and Communication Engineering">Electronics and Communication Engineering</option>
+                <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
                 <option value="Civil Engineering">Civil Engineering</option>
               </select>
             </div>
 
-            {/* 📞 WhatsApp */}
+            {/* 📞 WhatsApp Number */}
             <div>
               <label
                 className={`block font-semibold mb-1 ${

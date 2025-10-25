@@ -39,7 +39,7 @@ const SellerDashboard = () => {
   // 🧾 Fetch seller's products
   const fetchMyProducts = async () => {
     try {
-      const { data } = await api.get("/products", {
+      const { data } = await api.get("/api/products", {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const myProducts = data.products.filter(
@@ -66,7 +66,7 @@ const SellerDashboard = () => {
     formData.append("image", file);
 
     try {
-      const { data } = await api.post("/products/upload", formData, {
+      const { data } = await api.post("/api/products/upload", formData, {
         headers: {
           Authorization: `Bearer ${user.token}`,
           "Content-Type": "multipart/form-data",
@@ -89,7 +89,7 @@ const SellerDashboard = () => {
 
     try {
       if (editingId) {
-        const { data } = await api.put(`/products/${editingId}`, product, {
+        const { data } = await api.put(`/api/products/${editingId}`, product, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setProducts((prev) =>
@@ -97,7 +97,7 @@ const SellerDashboard = () => {
         );
         toast.success("Product updated ✏️");
       } else {
-        const { data } = await api.post("/products", product, {
+        const { data } = await api.post("/api/products", product, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setProducts((prev) => [data.product, ...prev]);
@@ -124,7 +124,7 @@ const SellerDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
     try {
-      await api.delete(`/products/${id}`, {
+      await api.delete(`/api/products/${id}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       setProducts((prev) => prev.filter((p) => p._id !== id));
@@ -153,7 +153,7 @@ const SellerDashboard = () => {
   const markAsSold = async (id) => {
     try {
       const { data } = await api.put(
-        `/products/${id}`,
+        `/api/products/${id}`,
         { isSold: true },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );

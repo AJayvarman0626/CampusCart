@@ -40,7 +40,8 @@ const Explore = () => {
           : keyword
           ? `?keyword=${encodeURIComponent(keyword)}`
           : "";
-        const { data } = await api.get(`/products${query}`);
+        // ✅ FIXED: added /api prefix
+        const { data } = await api.get(`/api/products${query}`);
         setProducts(Array.isArray(data) ? data : data.products || []);
       } catch (err) {
         console.error("Failed to load products", err);
@@ -55,7 +56,11 @@ const Explore = () => {
   // 💤 Empty state message
   const renderEmpty = () => (
     <div className="flex flex-col items-center justify-center text-center py-16">
-      <p className={`text-base sm:text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+      <p
+        className={`text-base sm:text-lg ${
+          isDark ? "text-gray-400" : "text-gray-600"
+        }`}
+      >
         {keyword || category
           ? "No products found for your search 🔍"
           : "No products listed yet. Be the first to post!"}
@@ -130,7 +135,11 @@ const Explore = () => {
                   onClick={() => navigate(`/product/${product._id}`)}
                   className={`
                     rounded-xl border overflow-hidden
-                    ${isDark ? "border-gray-700 bg-[#1d1d1d]" : "border-gray-200 bg-white"}
+                    ${
+                      isDark
+                        ? "border-gray-700 bg-[#1d1d1d]"
+                        : "border-gray-200 bg-white"
+                    }
                     shadow-md hover:shadow-lg transition-all cursor-pointer
                     w-[92%] sm:w-[85%] md:w-[80%] lg:w-[75%]
                   `}
@@ -191,9 +200,6 @@ const Explore = () => {
           )}
         </section>
       )}
-
-      {/* 🧾 Footer */}
-      
     </main>
   );
 };

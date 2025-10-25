@@ -33,7 +33,8 @@ const ProductDetails = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data } = await api.get(`/products/${id}`);
+        // ✅ FIX: added /api/ prefix
+        const { data } = await api.get(`/api/products/${id}`);
         setProduct(data);
       } catch (err) {
         console.error("Failed to fetch product", err);
@@ -46,7 +47,7 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id, navigate]);
 
-  // 💬 Contact
+  // 💬 Contact Seller (WhatsApp)
   const handleWhatsApp = () => {
     const sellerName = product.seller?.name || "Seller";
     const message = encodeURIComponent(
@@ -200,7 +201,7 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* 👤 Seller Info (clean version, no WhatsApp here) */}
+        {/* 👤 Seller Info */}
         {product.seller && (
           <div
             className={`border-t p-6 flex flex-col sm:flex-row justify-between items-center gap-4 transition-all duration-500 ${
@@ -239,7 +240,6 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            {/* ✨ Cute View Profile Button Only */}
             <button
               onClick={() => navigate(`/seller/${product.seller._id}`)}
               className={`px-6 py-2 rounded-full font-semibold text-sm sm:text-base shadow-md transition-all ${

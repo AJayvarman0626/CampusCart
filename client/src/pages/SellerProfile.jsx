@@ -29,10 +29,11 @@ const SellerProfile = () => {
   useEffect(() => {
     const fetchSellerData = async () => {
       try {
-        const userRes = await api.get(`/users/${id}`);
+        // ✅ FIXED: added /api prefix for both routes
+        const userRes = await api.get(`/api/users/${id}`);
         setSeller(userRes.data);
 
-        const productRes = await api.get(`/products/seller/${id}`);
+        const productRes = await api.get(`/api/products/seller/${id}`);
         setProducts(productRes.data || []);
       } catch (error) {
         console.error("❌ Error loading seller:", error);
