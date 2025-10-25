@@ -12,30 +12,32 @@ connectDB();
 
 const app = express();
 
-// 🧩 Debug logs for import checks
-console.log("🧩 userRoutes import:", typeof userRoutes);
-console.log("🧩 productRoutes import:", typeof productRoutes);
-
+// 🧩 Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+
+// ✅ Health check (for uptime monitoring)
+app.get("/ping", (req, res) => {
+  res.status(200).send("pong 🧠");
+});
 
 // ✅ Root route
 app.get("/", (req, res) => {
   res.send("CampusCart API running 🛒");
 });
 
-// ✅ Mount your routes BEFORE error handlers
+// ✅ Routes
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 
-console.log("✅ Mounted routes: /api/users, /api/products");
-
-// ❌ If no route matches → trigger notFound
+// ❌ Not found middleware
 app.use(notFound);
 
-// 🧩 Centralized error handler
+// 🧠 Error handler middleware
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT} (CampusCart API Live)`)
+);
