@@ -13,18 +13,24 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     try {
       const userData = await signInWithGoogle();
-      const { data } = await api.post("/users/google-login", userData);
+
+      // 🧠 Try logging in first
+      const { data } = await api.post("/api/users/google-login", userData);
       login(data);
       toast.success(`Welcome back, ${data.name}! 🤝`);
       navigate("/dashboard");
     } catch (err) {
       if (err.response?.status === 404) {
         toast("No account found — creating one for you ⚙️");
-        const registerRes = await api.post("/users/google-register", userData);
+
+        // 🧩 Register if user not found
+        const registerRes = await api.post("/api/users/google-register", userData);
         login(registerRes.data);
+        toast.success(`Welcome, ${registerRes.data.name}! 👋`);
         navigate("/dashboard");
       } else {
-        toast.error("Login failed 💔");
+        console.error("Google login failed:", err);
+        toast.error("Google Login failed 💔");
       }
     }
   };
