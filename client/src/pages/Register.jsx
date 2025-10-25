@@ -11,19 +11,11 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleGoogleRegister = async () => {
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Handle Google Registration
- * - Sign in with Google
- * - Register user with the Firebase-generated user data
- * - Login the user with the registered data
- * - Navigate to the dashboard
- * - Handle errors (e.g. if user is already registered)
- */
-
-/*******  36f4cb36-b0d7-4586-ae98-95e63c6de822  *******/    try {
+    try {
       const userData = await signInWithGoogle();
-      const { data } = await api.post("/users/google-register", userData);
+      // ✅ Add /api prefix here
+      const { data } = await api.post("/api/users/google-register", userData);
+
       login(data);
       toast.success(`Welcome aboard, ${data.name}! 🚀`);
       navigate("/dashboard");
