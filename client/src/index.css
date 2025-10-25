@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* 🌑 Global Styles */
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #ffffff;
+  color: #1f1f1f;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* 🌘 Dark Mode */
+.dark body {
+  background-color: #0f0f0f;
+  color: #e0e0e0;
+}
+
+/* 🧱 Navbar Offset Fix */
+main,
+.page-container {
+  padding-top: 88px; /* ensures navbar doesn't overlap content */
+}
+
+/* 💎 Glassmorphism Utility */
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.dark .glass-card {
+  background: rgba(20, 20, 20, 0.6);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 🧭 Smooth Scroll + Selection Color */
+html {
+  scroll-behavior: smooth;
+}
+::selection {
+  background: #3b3b3b;
+  color: #ffffff;
+}
+
+/* 🖱️ Scrollbar Style (Subtle Gray) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b3b3b, #6b6b6b);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #505050, #7a7a7a);
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease forwards;
+}
