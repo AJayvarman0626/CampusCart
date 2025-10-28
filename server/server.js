@@ -1,3 +1,4 @@
+// server.js (replace your current file)
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -21,59 +22,66 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-// Routes
-app.get("/ping", (req, res) => res.send("pong 🧠"));
+// --- make root & health-check robust for GET + HEAD ---
+// GET root (friendly)
+app.get("/", (req, res) => {
+  res.status(200).send("CampusCart API running 🛒");
+});
+// HEAD root (health checks / proxies may use HEAD)
+app.head("/", (req, res) => {
+  res.sendStatus(200);
+});
+
+// Health check (GET + HEAD)
+app.get("/ping", (req, res) => res.status(200).send("pong 🧠"));
+app.head("/ping", (req, res) => res.sendStatus(200));
+
+// API Routes
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/chats", chatRoutes);
+
+// If you ever serve static frontend from the same server, you can mount it here.
+// app.use(express.static(path.join(__dirname, "client", "dist")));
+
+// Not found middleware (must be after routes)
 app.use(notFound);
+
+// Error handler (last)
 app.use(errorHandler);
 
-// ⚡ SOCKET.IO
+// SOCKET.IO SETUP 🚀
 const io = new Server(server, {
   cors: {
-    origin: ["https://campus-cart-lilac.vercel.app", "http://localhost:5173"],
+    origin: [
+      "https://campus-cart-lilac.vercel.app",
+      "http://localhost:5173",
+      // add your front-end domain(s) here
+    ],
     methods: ["GET", "POST", "DELETE"],
   },
 });
 
-const onlineUsers = new Map();
-
 io.on("connection", (socket) => {
   console.log("🟢 Socket connected:", socket.id);
 
-  // 🧠 When user joins
-  socket.on("joinUser", (userId) => {
-    if (!userId) return;
-    onlineUsers.set(userId, socket.id);
-    console.log(`👤 ${userId} online`);
-    io.emit("userStatusUpdate", { userId, status: "online" });
+  socket.on("joinChat", (userId) => {
+    socket.join(userId);
+    console.log(`👤 User joined room: ${userId}`);
   });
 
-  // 💬 Message send
   socket.on("sendMessage", (msg) => {
-    const { sender, receiver } = msg;
-    console.log(`✉️ Message from ${sender} to ${receiver}`);
-    io.to(onlineUsers.get(receiver)).emit("newMessage", msg);
-    io.to(onlineUsers.get(sender)).emit("messageSentAck", msg);
+    // deliver to receiver and sender rooms
+    if (msg?.receiver) io.to(msg.receiver).emit("newMessage", msg);
+    if (msg?.sender) io.to(msg.sender).emit("newMessage", msg);
   });
 
-  // 🧠 When chat opened -> mark seen
-  socket.on("markSeen", ({ chatWith, userId }) => {
-    io.to(onlineUsers.get(chatWith)).emit("messageSeenAck", { seenBy: userId });
-  });
-
-  // 🔴 On disconnect
   socket.on("disconnect", () => {
-    const offlineUser = [...onlineUsers.entries()].find(([_, sid]) => sid === socket.id);
-    if (offlineUser) {
-      const [userId] = offlineUser;
-      onlineUsers.delete(userId);
-      io.emit("userStatusUpdate", { userId, status: "offline" });
-      console.log(`🔴 ${userId} offline`);
-    }
+    console.log("🔴 Socket disconnected:", socket.id);
   });
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT} (CampusCart Chat Live)`)
+);
