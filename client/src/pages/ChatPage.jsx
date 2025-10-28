@@ -19,7 +19,7 @@ const ChatPage = () => {
   const socket = useRef(null);
   const chatEndRef = useRef(null);
 
-  // 🌗 Watch theme mode live
+  // 🌗 Theme watcher
   useEffect(() => {
     const updateTheme = () =>
       setIsDark(document.documentElement.classList.contains("dark"));
@@ -111,24 +111,41 @@ const ChatPage = () => {
     }
   };
 
+  // 🕒 Format message time for Chennai (IST)
+  const formatTimeIST = (isoString) => {
+    try {
+      // If isoString missing or invalid, fallback to now
+      const d = isoString ? new Date(isoString) : new Date();
+      // Use toLocaleTimeString with timeZone 'Asia/Kolkata'
+      return d.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+      });
+    } catch (err) {
+      return "—";
+    }
+  };
+
   return (
     <main
-      className={`pt-24 min-h-screen flex flex-col transition-colors duration-500 ${
+      className={`min-h-screen flex flex-col transition-colors duration-500 ${
         isDark ? "bg-[#0f0f0f] text-gray-100" : "bg-gray-50 text-gray-900"
       }`}
     >
-      {/* 🔝 Header */}
+      {/* 🔝 Fixed Oval Header */}
       <div
-        className={`flex items-center justify-between px-4 py-3 border-b cursor-pointer ${
-          isDark ? "border-gray-700 bg-[#121212]" : "border-gray-300 bg-white"
-        }`}
+        className={`sticky top-[72px] flex items-center justify-between px-4 py-3 border-b z-40 cursor-pointer ${
+          isDark ? "border-gray-700 bg-[#121212]/95" : "border-gray-300 bg-white/95"
+        } backdrop-blur-md shadow-sm rounded-3xl mx-3 mt-2`}
         onClick={handleProfileClick}
       >
         <div className="flex items-center gap-3">
           <ArrowLeft
-            className="cursor-pointer"
+            className="cursor-pointer hover:text-blue-500 transition"
             onClick={(e) => {
-              e.stopPropagation(); // prevent triggering profile navigation
+              e.stopPropagation();
               navigate("/messages");
             }}
           />
@@ -141,7 +158,7 @@ const ChatPage = () => {
             className="w-10 h-10 rounded-full object-cover border"
           />
           <div>
-            <p className="font-semibold">{receiver?.name || "User"}</p>
+            <p className="font-semibold text-base">{receiver?.name || "User"}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {receiver?.stream || "Student"}
             </p>
@@ -150,38 +167,47 @@ const ChatPage = () => {
       </div>
 
       {/* 💬 Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              msg.sender === user._id ? "justify-end" : "justify-start"
-            }`}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`max-w-xs sm:max-w-sm px-3 py-2 rounded-2xl shadow ${
-                msg.sender === user._id
-                  ? "bg-blue-600 text-white"
-                  : isDark
-                  ? "bg-gray-800 text-gray-100"
-                  : "bg-gray-200 text-gray-900"
-              }`}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 mt-2 mb-[90px]">
+        {messages.map((msg, index) => {
+          const isSent = msg.sender === user._id || msg.sender === user?._id;
+          return (
+            <div
+              key={index}
+              className={`flex flex-col ${isSent ? "items-end" : "items-start"}`}
             >
-              {msg.content}
-            </motion.div>
-          </div>
-        ))}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.18 }}
+                className={`max-w-xs sm:max-w-sm px-3 py-2 rounded-2xl shadow ${
+                  isSent
+                    ? "bg-blue-600 text-white"
+                    : isDark
+                    ? "bg-gray-800 text-gray-100"
+                    : "bg-gray-200 text-gray-900"
+                }`}
+              >
+                {msg.content}
+              </motion.div>
+
+              <span
+                className={`text-[10px] mt-1 ${
+                  isSent ? "text-gray-300 dark:text-gray-400" : "text-gray-500 dark:text-gray-500"
+                } ${isSent ? "text-right" : "text-left"}`}
+              >
+                {formatTimeIST(msg.createdAt)}
+              </span>
+            </div>
+          );
+        })}
         <div ref={chatEndRef} />
       </div>
 
-      {/* 📝 Input */}
+      {/* 📝 Floating Constant Input */}
       <form
         onSubmit={sendMessage}
-        className={`flex items-center gap-3 px-4 py-3 border-t ${
-          isDark ? "border-gray-700 bg-[#121212]" : "border-gray-300 bg-white"
+        className={`fixed bottom-3 left-1/2 transform -translate-x-1/2 w-[95%] sm:w-[90%] md:w-[80%] lg:w-[60%] flex items-center gap-3 p-2 shadow-lg rounded-full ${
+          isDark ? "bg-[#1a1a1a] border border-gray-700" : "bg-white border border-gray-300"
         }`}
       >
         <input
@@ -189,18 +215,14 @@ const ChatPage = () => {
           value={newMsg}
           onChange={(e) => setNewMsg(e.target.value)}
           placeholder="Type your message..."
-          className={`flex-1 rounded-full px-4 py-2 outline-none ${
-            isDark
-              ? "bg-gray-800 border border-gray-700 text-gray-100"
-              : "bg-gray-100 border border-gray-300 text-gray-900"
+          className={`flex-1 bg-transparent px-4 py-2 outline-none text-sm sm:text-base ${
+            isDark ? "text-gray-100 placeholder-gray-400" : "text-gray-800 placeholder-gray-500"
           }`}
         />
         <button
           type="submit"
-          className={`p-3 rounded-full ${
-            isDark
-              ? "bg-blue-500 hover:bg-blue-600"
-              : "bg-blue-600 hover:bg-blue-700"
+          className={`p-2.5 rounded-full flex items-center justify-center transition-all ${
+            isDark ? "bg-blue-500 hover:bg-blue-600" : "bg-blue-600 hover:bg-blue-700"
           } text-white`}
         >
           <Send size={18} />

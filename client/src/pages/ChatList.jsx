@@ -6,7 +6,8 @@ import { io } from "socket.io-client";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
-const ENDPOINT = "https://campuscart-server.onrender.com"; // ⚙️ backend URL
+const ENDPOINT = "https://campuscart-server.onrender.com";
+const LAST_SEEN_KEY = "campuscart_lastSeenMessages";
 
 const ChatList = () => {
   const { user } = useAuth();
@@ -20,6 +21,19 @@ const ChatList = () => {
   const isDark = document.documentElement.classList.contains("dark");
   const socket = useRef(null);
 
+  // 🧠 Load & Save last seen timestamps
+  const loadLastSeen = () => {
+    try {
+      return JSON.parse(localStorage.getItem(LAST_SEEN_KEY)) || {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveLastSeen = (map) => {
+    localStorage.setItem(LAST_SEEN_KEY, JSON.stringify(map));
+  };
+
   // 🧠 Fetch all existing chats
   useEffect(() => {
     const fetchChats = async () => {
@@ -27,7 +41,22 @@ const ChatList = () => {
         const { data } = await api.get("/api/chats", {
           headers: { Authorization: `Bearer ${user.token}` },
         });
+
         setChats(data);
+
+        // Offline detection (compare last seen)
+        const lastSeen = loadLastSeen();
+        const offlineUnread = {};
+        data.forEach((chat) => {
+          const other = chat.users?.find((u) => u._id !== user._id);
+          if (!other) return;
+          const lastTime = new Date(chat.lastMessage?.createdAt || chat.updatedAt).getTime();
+          const seenTime = lastSeen[other._id] || 0;
+          if (lastTime > seenTime) {
+            offlineUnread[other._id] = true;
+          }
+        });
+        setUnread(offlineUnread);
       } catch (error) {
         console.error("❌ Failed to load chats:", error);
       } finally {
@@ -37,7 +66,7 @@ const ChatList = () => {
     if (user?.token) fetchChats();
   }, [user]);
 
-  // ⚡ Socket setup
+  // ⚡ Socket setup (real-time)
   useEffect(() => {
     if (!user?._id) return;
 
@@ -45,13 +74,12 @@ const ChatList = () => {
     socket.current.emit("joinChat", user._id);
 
     socket.current.on("newMessage", (msg) => {
-      // Ignore your own sent message
       if (msg.sender === user._id) return;
 
-      // Update unread state for receiver
+      // Update unread badge instantly
       setUnread((prev) => ({
         ...prev,
-        [msg.sender]: true, // mark this sender as "new"
+        [msg.sender]: true,
       }));
 
       // Update chat list instantly
@@ -63,21 +91,19 @@ const ChatList = () => {
 
         if (chatIndex >= 0) {
           updated[chatIndex].lastMessage = msg;
-          // Move chat to top
+          updated[chatIndex].updatedAt = msg.createdAt || new Date().toISOString();
           const [recent] = updated.splice(chatIndex, 1);
           updated.unshift(recent);
         } else {
-          // New chat if doesn't exist
           updated.unshift({
             users: [
               { _id: msg.sender, name: msg.senderName, profilePic: msg.senderPic },
               { _id: user._id },
             ],
             lastMessage: msg,
-            updatedAt: new Date().toISOString(),
+            updatedAt: msg.createdAt || new Date().toISOString(),
           });
         }
-
         return [...updated];
       });
     });
@@ -113,13 +139,20 @@ const ChatList = () => {
         { userId },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
-      // Remove unread mark
+
+      // ✅ Mark chat as seen when opened
+      const seenMap = loadLastSeen();
+      seenMap[userId] = Date.now();
+      saveLastSeen(seenMap);
+
+      // remove unread badge
       setUnread((prev) => {
         const updated = { ...prev };
         delete updated[userId];
         return updated;
       });
-      navigate(`/chat/${userId}`);
+
+      navigate(`/chat/${userId}`); // ✅ keep your working route
     } catch (error) {
       console.error("❌ Failed to access chat:", error);
     }
