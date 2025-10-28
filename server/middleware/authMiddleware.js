@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
-// Protect routes (only logged-in users)
+// 🔐 Protect routes (only logged-in users)
 export const protect = async (req, res, next) => {
   let token;
 
@@ -29,7 +29,7 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Admin-only access
+// 👑 Admin-only access
 export const admin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
@@ -13,7 +13,6 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isDark, setIsDark] = useState(false);
-  const [showContactOptions, setShowContactOptions] = useState(false);
 
   // 🌗 Theme Sync
   useEffect(() => {
@@ -33,7 +32,6 @@ const ProductDetails = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        // ✅ FIX: added /api/ prefix
         const { data } = await api.get(`/api/products/${id}`);
         setProduct(data);
       } catch (err) {
@@ -46,17 +44,6 @@ const ProductDetails = () => {
     };
     fetchProduct();
   }, [id, navigate]);
-
-  // 💬 Contact Seller (WhatsApp)
-  const handleWhatsApp = () => {
-    const sellerName = product.seller?.name || "Seller";
-    const message = encodeURIComponent(
-      `Hey ${sellerName}! 👋\nI'm interested in buying your product "${product.name}" from CampusCart.`
-    );
-    const sellerPhone =
-      product.seller?.whatsappNumber?.replace(/\s/g, "") || "+919876543210";
-    window.open(`https://wa.me/${sellerPhone}?text=${message}`, "_blank");
-  };
 
   // 🛒 Add to Cart
   const handleAddToCart = () => {
@@ -83,6 +70,16 @@ const ProductDetails = () => {
       console.error("Cart error:", error);
       toast.error("Failed to add to cart 💔");
     }
+  };
+
+  // 💬 Direct Message Seller
+  const handleMessageSeller = () => {
+    if (!user) {
+      toast.error("Please log in to message the seller ⚡");
+      navigate("/login");
+      return;
+    }
+    navigate(`/chat/new?seller=${product.seller._id}`);
   };
 
   if (loading) {
@@ -186,14 +183,14 @@ const ProductDetails = () => {
                     🛒 Add to Cart
                   </button>
                   <button
-                    onClick={() => setShowContactOptions(true)}
+                    onClick={handleMessageSeller}
                     className={`flex-1 px-5 py-3 rounded-xl font-semibold shadow-md transition-all ${
                       isDark
-                        ? "bg-green-500 text-white hover:bg-green-600"
-                        : "bg-green-600 text-white hover:bg-green-700"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
                     }`}
                   >
-                    💬 Contact Seller
+                    💬 Message Seller
                   </button>
                 </>
               )}
@@ -240,61 +237,31 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => navigate(`/seller/${product.seller._id}`)}
-              className={`px-6 py-2 rounded-full font-semibold text-sm sm:text-base shadow-md transition-all ${
-                isDark
-                  ? "bg-white/90 text-black hover:bg-white"
-                  : "bg-gray-900 text-white hover:bg-gray-800"
-              }`}
-            >
-              View Profile →
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate(`/seller/${product.seller._id}`)}
+                className={`px-6 py-2 rounded-full font-semibold text-sm sm:text-base shadow-md transition-all ${
+                  isDark
+                    ? "bg-white/90 text-black hover:bg-white"
+                    : "bg-gray-900 text-white hover:bg-gray-800"
+                }`}
+              >
+                View Profile →
+              </button>
+              <button
+                onClick={handleMessageSeller}
+                className={`px-6 py-2 rounded-full font-semibold text-sm sm:text-base shadow-md transition-all ${
+                  isDark
+                    ? "bg-blue-400/90 text-black hover:bg-blue-500"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+              >
+                💬 Message Seller
+              </button>
+            </div>
           </div>
         )}
       </motion.div>
-
-      {/* 💬 Contact Modal */}
-      <AnimatePresence>
-        {showContactOptions && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`p-6 rounded-2xl shadow-2xl border text-center w-[90%] max-w-sm ${
-                isDark
-                  ? "bg-[#1a1a1a] border-gray-700 text-gray-100"
-                  : "bg-white border-gray-200 text-gray-900"
-              }`}
-            >
-              <h2 className="text-xl font-bold mb-4">Contact Seller</h2>
-              <button
-                onClick={handleWhatsApp}
-                className="w-full px-5 py-2 rounded-lg font-semibold bg-green-500 text-white hover:bg-green-600 transition-all"
-              >
-                💬 WhatsApp
-              </button>
-              <button
-                onClick={() => setShowContactOptions(false)}
-                className={`mt-4 w-full text-sm transition-all ${
-                  isDark
-                    ? "text-gray-400 hover:text-gray-200"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Cancel
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </main>
   );
 };

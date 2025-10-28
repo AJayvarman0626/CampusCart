@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Moon, Sun, ShoppingCart } from "lucide-react";
+import { Moon, Sun, ShoppingCart, MessageCircle } from "lucide-react";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -47,7 +47,18 @@ export default function Navbar() {
 
         {/* ---------- Desktop Links ---------- */}
         <div className="hidden md:flex items-center gap-5 font-semibold text-gray-800 dark:text-gray-200">
-          {/* 🛒 Cart Button (desktop) */}
+          {/* 💬 Messages */}
+          {user && (
+            <button
+              onClick={() => navigate("/messages")}
+              className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              aria-label="Messages"
+            >
+              <MessageCircle size={22} />
+            </button>
+          )}
+
+          {/* 🛒 Cart */}
           <button
             onClick={() => navigate("/cart")}
             className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
@@ -124,9 +135,21 @@ export default function Navbar() {
       {menuOpen && (
         <div className="md:hidden bg-white/95 dark:bg-[#111]/95 border-t border-gray-200 dark:border-gray-800 shadow-lg animate-fadeIn">
           <div className="flex flex-col items-center py-5 gap-4 font-semibold text-gray-800 dark:text-gray-200">
+            {/* 💬 Messages + 🛒 Cart + 🌗 Theme */}
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {user && (
+                <button
+                  onClick={() => {
+                    navigate("/messages");
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                >
+                  <MessageCircle size={18} />
+                  <span>Messages</span>
+                </button>
+              )}
 
-            {/* 🛒 Cart + 🌗 Theme Toggles (side by side) */}
-            <div className="flex items-center gap-4">
               <button
                 onClick={() => {
                   navigate("/cart");

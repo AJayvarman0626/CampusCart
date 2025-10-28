@@ -29,7 +29,6 @@ const SellerProfile = () => {
   useEffect(() => {
     const fetchSellerData = async () => {
       try {
-        // ✅ FIXED: added /api prefix for both routes
         const userRes = await api.get(`/api/users/${id}`);
         setSeller(userRes.data);
 
@@ -109,16 +108,31 @@ const SellerProfile = () => {
             <p className="mt-3 text-gray-600 dark:text-gray-300 italic">
               {seller.bio || "No bio available"}
             </p>
-            <button
-              onClick={() => navigate(-1)}
-              className={`mt-5 px-6 py-2 rounded-full font-semibold transition-all ${
-                isDark
-                  ? "bg-white/90 text-black hover:bg-white"
-                  : "bg-gray-900 text-white hover:bg-gray-800"
-              }`}
-            >
-              ← Back
-            </button>
+
+            <div className="flex flex-wrap gap-3 mt-5 justify-center sm:justify-start">
+              <button
+                onClick={() => navigate(-1)}
+                className={`px-6 py-2 rounded-full font-semibold transition-all ${
+                  isDark
+                    ? "bg-white/90 text-black hover:bg-white"
+                    : "bg-gray-900 text-white hover:bg-gray-800"
+                }`}
+              >
+                ← Back
+              </button>
+
+              {/* 💬 Message Seller Button */}
+              <button
+                onClick={() => navigate(`/chat/new?seller=${seller._id}`)}
+                className={`px-6 py-2 rounded-full font-semibold transition-all ${
+                  isDark
+                    ? "bg-blue-400/90 text-black hover:bg-blue-500"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+              >
+                💬 Message Seller
+              </button>
+            </div>
           </div>
         </div>
 

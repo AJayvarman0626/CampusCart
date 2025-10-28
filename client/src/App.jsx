@@ -11,7 +11,9 @@ import SellerDashboard from "./pages/SellerDashboard";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import SellerProfile from "./pages/SellerProfile";
-import Loader from "./components/Loader"; // 🧠 Import your animated loader
+import Loader from "./components/Loader"; 
+import ChatList from "./pages/ChatList";
+import ChatPage from "./pages/ChatPage";
 
 function App() {
   return (
@@ -33,6 +35,9 @@ function App() {
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/seller/:id" element={<SellerProfile />} />
+          <Route path="/messages" element={<ChatList />} />
+          <Route path="/chat/:id" element={<ChatPage />} />
+          <Route path="/chat/new" element={<ChatPage />} />
         </Routes>
       </BrowserRouter>
     </>

@@ -8,20 +8,20 @@ import api from "../utils/api";
 const Dashboard = () => {
   const { user, login, logout } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef();
 
   const [profileData, setProfileData] = useState({
     name: "",
     stream: "",
     year: "",
     bio: "",
-    whatsappNumber: "",
     profilePic: "",
   });
+
   const [isEditing, setIsEditing] = useState(false);
   const [preview, setPreview] = useState(null);
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const fileInputRef = useRef();
 
   // 🌙 Live theme watcher
   useEffect(() => {
@@ -37,7 +37,7 @@ const Dashboard = () => {
     return () => observer.disconnect();
   }, []);
 
-  // 🧩 Load Profile from backend
+  // 🧩 Load Profile
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -75,24 +75,6 @@ const Dashboard = () => {
     }
   };
 
-  // ☎️ WhatsApp formatter
-  const handlePhoneChange = (e) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.startsWith("91")) value = value.slice(2);
-    if (value.length > 10) value = value.slice(0, 10);
-    const stored = value ? `+91${value}` : "";
-
-    const formatted = value
-      ? `+91 ${value.substring(0, 5)} ${value.substring(5)}`
-      : "";
-
-    setProfileData({
-      ...profileData,
-      whatsappNumber: stored,
-      formattedNumber: formatted,
-    });
-  };
-
   // 📚 Stream Short Map
   const streamShortMap = {
     "Computer Science and Engineering": "CSE",
@@ -106,8 +88,8 @@ const Dashboard = () => {
 
   // 💾 Save Profile
   const handleSave = async () => {
-    if (!profileData.name || !profileData.whatsappNumber) {
-      toast.error("Please complete your profile details ⚠️");
+    if (!profileData.name) {
+      toast.error("Please enter your name ⚠️");
       return;
     }
 
@@ -143,16 +125,8 @@ const Dashboard = () => {
   };
 
   const handleSeller = () => {
-    if (!profileData.whatsappNumber) {
-      toast.error("Add WhatsApp number before selling 📱");
-      return;
-    }
     navigate("/seller-dashboard");
   };
-
-  const displayPhone = profileData.whatsappNumber
-    ? `+91 ${profileData.whatsappNumber.slice(-10, -5)} ${profileData.whatsappNumber.slice(-5)}`
-    : "WhatsApp not added";
 
   return (
     <div
@@ -240,13 +214,6 @@ const Dashboard = () => {
               <p className="text-gray-700 dark:text-gray-300">
                 {profileData.bio || "No bio added yet."}
               </p>
-              <p
-                className={`mt-2 text-sm ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                📱 {displayPhone}
-              </p>
             </div>
           </div>
         ) : (
@@ -295,37 +262,26 @@ const Dashboard = () => {
                 }`}
               >
                 <option value="">Select Stream</option>
-                <option value="Computer Science and Engineering">Computer Science and Engineering</option>
-                <option value="Artificial Intelligence and Data Science">Artificial Intelligence and Data Science</option>
-                <option value="Information Technology">Information Technology</option>
-                <option value="Electronics and Communication Engineering">Electronics and Communication Engineering</option>
-                <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
-                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Computer Science and Engineering">
+                  Computer Science and Engineering
+                </option>
+                <option value="Artificial Intelligence and Data Science">
+                  Artificial Intelligence and Data Science
+                </option>
+                <option value="Information Technology">
+                  Information Technology
+                </option>
+                <option value="Electronics and Communication Engineering">
+                  Electronics and Communication Engineering
+                </option>
+                <option value="Electrical and Electronics Engineering">
+                  Electrical and Electronics Engineering
+                </option>
+                <option value="Mechanical Engineering">
+                  Mechanical Engineering
+                </option>
                 <option value="Civil Engineering">Civil Engineering</option>
               </select>
-            </div>
-
-            {/* 📞 WhatsApp Number */}
-            <div>
-              <label
-                className={`block font-semibold mb-1 ${
-                  isDark ? "text-gray-300" : "text-gray-700"
-                }`}
-              >
-                WhatsApp Number
-              </label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={profileData.formattedNumber || ""}
-                onChange={handlePhoneChange}
-                placeholder="+91 98765 43210"
-                className={`w-full rounded-lg px-3 py-2 outline-none ${
-                  isDark
-                    ? "bg-gray-800 border border-gray-700 text-gray-100"
-                    : "bg-gray-100 border border-gray-300 text-gray-800"
-                }`}
-              />
             </div>
 
             {/* 📅 Year */}
