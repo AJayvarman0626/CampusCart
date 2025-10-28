@@ -9,6 +9,17 @@ html.dark {
   color-scheme: dark; /* When manually toggled */
 }
 
+/* 🧱 Anti–Auto-Dark Override */
+@media (prefers-color-scheme: dark) {
+  html:not(.dark),
+  body:not(.dark) {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f1f1f !important;
+    filter: none !important;
+  }
+}
+
 /* 🌑 Global Styles */
 body {
   font-family: "Inter", sans-serif;
