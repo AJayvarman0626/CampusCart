@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import cartLogo from "../assets/cart.png"; // 🛒 make sure path is right
+import cartLogo from "../assets/white.png"; // 🛒 make sure the path is correct
 
 const Loader = () => {
   const [showLoader, setShowLoader] = useState(true);
@@ -17,13 +17,13 @@ const Loader = () => {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: "easeInOut" }}
-          className="fixed inset-0 flex flex-col items-center justify-center bg-white dark:bg-[#0f0f0f] z-[9999]"
+          className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[9999]"
         >
           {/* 🛒 The Main Cart Icon */}
           <motion.img
             src={cartLogo}
             alt="CampusCart Loader"
-            className="w-40 h-40 drop-shadow-2xl" // ⬆️ increased size
+            className="w-40 h-40 drop-shadow-2xl"
             initial={{ x: -300, opacity: 0, rotate: -10 }}
             animate={{
               x: 0,
@@ -39,7 +39,7 @@ const Loader = () => {
 
           {/* ✨ Soft glow trail effect */}
           <motion.div
-            className="absolute w-28 h-28 rounded-full bg-pink-500/30 blur-3xl"
+            className="absolute w-28 h-28 rounded-full bg-pink-400/30 blur-3xl"
             initial={{ x: -300, opacity: 0 }}
             animate={{
               x: 50,
@@ -52,12 +52,12 @@ const Loader = () => {
             }}
           />
 
-          {/* 🧠 Optional: CampusCart brand fade */}
+          {/* 🧠 CampusCart Brand Name */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
-            className="mt-6 text-2xl font-bold text-gray-700 dark:text-gray-200 tracking-wide"
+            className="mt-6 text-2xl font-bold text-gray-700 tracking-wide"
           >
             CampusCart 🛍️
           </motion.h1>

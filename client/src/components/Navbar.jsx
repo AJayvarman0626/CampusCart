@@ -72,7 +72,7 @@ export default function Navbar() {
   }, [isBlinking]);
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-md bg-white/80 dark:bg-[#111]/80 border-b border-gray-200 dark:border-gray-800 shadow-sm transition-all duration-300">
+    <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-md bg-white/90 border-b border-gray-200 shadow-sm transition-all duration-300">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
         {/* ---------- Logo ---------- */}
         <Link
@@ -81,25 +81,25 @@ export default function Navbar() {
           className="flex items-center gap-2 group transition-all"
         >
           <img src="/nav-icon.png" alt="CampusCart Logo" className="w-8 h-8 rounded" />
-          <span className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
             CampusCart
           </span>
         </Link>
 
         {/* ---------- Desktop Menu ---------- */}
-        <div className="hidden md:flex items-center gap-5 font-semibold text-gray-800 dark:text-gray-200">
+        <div className="hidden md:flex items-center gap-5 font-semibold text-gray-800">
           {/* 💬 Chat */}
           {user && (
             <div className="relative">
               <button
                 onClick={() => navigate("/messages")}
-                className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition relative"
+                className="p-2.5 rounded-lg hover:bg-gray-100 transition relative"
                 aria-label="Chat"
               >
                 <MessageCircle size={22} />
                 {hasUnread && (
                   <span
-                    className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-white dark:ring-[#111] ${
+                    className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-white ${
                       isBlinking ? "animate-ping" : ""
                     }`}
                   />
@@ -111,7 +111,7 @@ export default function Navbar() {
           {/* 🛒 Cart */}
           <button
             onClick={() => navigate("/cart")}
-            className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="p-2.5 rounded-lg hover:bg-gray-100 transition"
             aria-label="Cart"
           >
             <ShoppingCart size={22} />
@@ -120,7 +120,7 @@ export default function Navbar() {
           {/* 🌗 Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="p-2.5 rounded-lg hover:bg-gray-100 transition"
             aria-label="Toggle Theme"
           >
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
@@ -136,12 +136,12 @@ export default function Navbar() {
               alt="avatar"
               onClick={() => navigate("/dashboard")}
               title="Go to Dashboard"
-              className="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-700 object-cover cursor-pointer hover:scale-105 transition-all"
+              className="w-10 h-10 rounded-full border-2 border-gray-300 object-cover cursor-pointer hover:scale-105 transition-all"
             />
           ) : (
             <Link
               to="/login"
-              className="bg-gray-900 text-white px-5 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-all duration-200 dark:bg-white dark:text-black"
+              className="bg-gray-900 text-white px-5 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-all duration-200"
             >
               Login
             </Link>
@@ -151,12 +151,12 @@ export default function Navbar() {
         {/* ---------- Mobile Menu Button ---------- */}
         <button
           onClick={toggleMenu}
-          className="md:hidden text-gray-800 dark:text-gray-200 focus:outline-none"
+          className="md:hidden text-gray-800 focus:outline-none"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className={`w-7 h-7 transition-transform duration-300 ${
-              menuOpen ? "rotate-90 text-gray-900 dark:text-gray-100" : ""
+              menuOpen ? "rotate-90 text-gray-900" : ""
             }`}
             fill="none"
             viewBox="0 0 24 24"
@@ -173,8 +173,8 @@ export default function Navbar() {
 
       {/* ---------- Mobile Menu ---------- */}
       {menuOpen && (
-        <div className="md:hidden bg-white/95 dark:bg-[#111]/95 border-t border-gray-200 dark:border-gray-800 shadow-lg animate-fadeIn">
-          <div className="flex flex-col items-center py-5 gap-4 font-semibold text-gray-800 dark:text-gray-200">
+        <div className="md:hidden bg-white/95 border-t border-gray-200 shadow-lg animate-fadeIn">
+          <div className="flex flex-col items-center py-5 gap-4 font-semibold text-gray-800">
             <div className="flex flex-wrap items-center justify-center gap-4">
               {user && (
                 <button
@@ -182,13 +182,13 @@ export default function Navbar() {
                     navigate("/messages");
                     setMenuOpen(false);
                   }}
-                  className="relative flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                  className="relative flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
                 >
                   <MessageCircle size={18} />
                   <span>Chat</span>
                   {hasUnread && (
                     <span
-                      className={`absolute top-1 right-1 w-2.5 h-2.5 bg-blue-500 rounded-full ring-2 ring-white dark:ring-[#111] ${
+                      className={`absolute top-1 right-1 w-2.5 h-2.5 bg-blue-500 rounded-full ring-2 ring-white ${
                         isBlinking ? "animate-ping" : ""
                       }`}
                     />
@@ -201,7 +201,7 @@ export default function Navbar() {
                   navigate("/cart");
                   setMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
               >
                 <ShoppingCart size={18} />
                 <span>Cart</span>
@@ -209,7 +209,7 @@ export default function Navbar() {
 
               <button
                 onClick={toggleTheme}
-                className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
               >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 <span>{darkMode ? "Light" : "Dark"}</span>
@@ -229,13 +229,13 @@ export default function Navbar() {
                   setMenuOpen(false);
                 }}
                 title="Go to Dashboard"
-                className="w-16 h-16 rounded-full border-2 border-gray-300 dark:border-gray-700 object-cover cursor-pointer hover:scale-105 transition-all"
+                className="w-16 h-16 rounded-full border-2 border-gray-300 object-cover cursor-pointer hover:scale-105 transition-all"
               />
             ) : (
               <Link
                 to="/login"
                 onClick={() => setMenuOpen(false)}
-                className="bg-gray-900 text-white px-5 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-all duration-200 dark:bg-white dark:text-black"
+                className="bg-gray-900 text-white px-5 py-2 rounded-lg shadow-md hover:bg-gray-800 transition-all duration-200"
               >
                 Login
               </Link>

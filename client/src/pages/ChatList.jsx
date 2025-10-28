@@ -18,8 +18,19 @@ const ChatList = () => {
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [unread, setUnread] = useState({});
-  const isDark = document.documentElement.classList.contains("dark");
+  const [isDark, setIsDark] = useState(
+    document.documentElement.classList.contains("dark")
+  );
   const socket = useRef(null);
+
+  // 🌓 Listen for navbar theme toggle changes
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   // 🧠 Load & Save last seen timestamps
   const loadLastSeen = () => {
@@ -50,7 +61,9 @@ const ChatList = () => {
         data.forEach((chat) => {
           const other = chat.users?.find((u) => u._id !== user._id);
           if (!other) return;
-          const lastTime = new Date(chat.lastMessage?.createdAt || chat.updatedAt).getTime();
+          const lastTime = new Date(
+            chat.lastMessage?.createdAt || chat.updatedAt
+          ).getTime();
           const seenTime = lastSeen[other._id] || 0;
           if (lastTime > seenTime) {
             offlineUnread[other._id] = true;
@@ -76,13 +89,11 @@ const ChatList = () => {
     socket.current.on("newMessage", (msg) => {
       if (msg.sender === user._id) return;
 
-      // Update unread badge instantly
       setUnread((prev) => ({
         ...prev,
         [msg.sender]: true,
       }));
 
-      // Update chat list instantly
       setChats((prevChats) => {
         let updated = [...prevChats];
         const chatIndex = updated.findIndex((c) =>
@@ -91,13 +102,18 @@ const ChatList = () => {
 
         if (chatIndex >= 0) {
           updated[chatIndex].lastMessage = msg;
-          updated[chatIndex].updatedAt = msg.createdAt || new Date().toISOString();
+          updated[chatIndex].updatedAt =
+            msg.createdAt || new Date().toISOString();
           const [recent] = updated.splice(chatIndex, 1);
           updated.unshift(recent);
         } else {
           updated.unshift({
             users: [
-              { _id: msg.sender, name: msg.senderName, profilePic: msg.senderPic },
+              {
+                _id: msg.sender,
+                name: msg.senderName,
+                profilePic: msg.senderPic,
+              },
               { _id: user._id },
             ],
             lastMessage: msg,
@@ -140,19 +156,17 @@ const ChatList = () => {
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
-      // ✅ Mark chat as seen when opened
       const seenMap = loadLastSeen();
       seenMap[userId] = Date.now();
       saveLastSeen(seenMap);
 
-      // remove unread badge
       setUnread((prev) => {
         const updated = { ...prev };
         delete updated[userId];
         return updated;
       });
 
-      navigate(`/chat/${userId}`); // ✅ keep your working route
+      navigate(`/chat/${userId}`);
     } catch (error) {
       console.error("❌ Failed to access chat:", error);
     }
@@ -166,81 +180,45 @@ const ChatList = () => {
     );
 
   return (
-    <main className="pt-24 min-h-screen px-4 bg-gray-50 dark:bg-[#0f0f0f] text-gray-900 dark:text-gray-100 transition-colors">
+    <main
+      className={`pt-24 min-h-screen px-4 transition-colors duration-500 ${
+        isDark ? "bg-[#1e1e1e] text-gray-100" : "bg-gray-50 text-gray-900"
+      }`}
+    >
       <h2 className="text-xl font-semibold mb-4">Messages 💬</h2>
 
       {/* 🔍 Search Bar */}
       <form
         onSubmit={handleSearch}
-        className={`flex items-center gap-2 w-full max-w-3xl mb-6
-          ${isDark ? "bg-white/10" : "bg-white/90"} backdrop-blur-md
-          border ${isDark ? "border-gray-700" : "border-gray-200"}
-          rounded-full px-4 py-2 shadow-sm sm:shadow-md transition-all`}
+        className={`flex items-center gap-2 w-full max-w-3xl mb-6 ${
+          isDark ? "bg-[#2a2a2a]" : "bg-white"
+        } border ${
+          isDark ? "border-gray-700" : "border-gray-200"
+        } rounded-full px-4 py-2 shadow-sm sm:shadow-md transition-all`}
       >
-        <div
-          className={`flex items-center shrink-0 ${
-            isDark ? "text-gray-300" : "text-gray-600"
-          }`}
-        >
-          <Search size={18} />
-        </div>
+        <Search size={18} className={isDark ? "text-gray-300" : "text-gray-600"} />
 
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users to chat..."
-          className={`flex-1 bg-transparent outline-none text-sm sm:text-base
-            ${
-              isDark
-                ? "text-gray-100 placeholder:text-gray-400"
-                : "text-gray-800 placeholder:text-gray-500"
-            }`}
+          className={`flex-1 bg-transparent outline-none text-sm sm:text-base ${
+            isDark
+              ? "text-gray-100 placeholder:text-gray-400"
+              : "text-gray-800 placeholder:text-gray-500"
+          }`}
         />
 
         <button
           type="submit"
-          className={`ml-2 rounded-full px-4 py-1.5 text-sm font-medium
-            ${isDark ? "bg-gray-100 text-black" : "bg-gray-900 text-white"}
-            hover:opacity-95 transition-all`}
+          className={`ml-2 rounded-full px-4 py-1.5 text-sm font-medium ${
+            isDark ? "bg-gray-100 text-black" : "bg-gray-900 text-white"
+          } hover:opacity-95 transition-all`}
         >
           Go
         </button>
       </form>
-
-      {/* 🔎 Search Results */}
-      {isSearching && searchResults.length > 0 && (
-        <div className="mb-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            Search Results:
-          </p>
-          <div className="flex flex-col gap-3">
-            {searchResults.map((u) => (
-              <motion.div
-                key={u._id}
-                whileHover={{ scale: 1.02 }}
-                onClick={() => handleStartChat(u._id)}
-                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer border dark:border-gray-700 bg-white dark:bg-[#121212] hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              >
-                <img
-                  src={
-                    u.profilePic ||
-                    `https://ui-avatars.com/api/?name=${u.name}&background=random`
-                  }
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover border"
-                />
-                <div>
-                  <p className="font-semibold">{u.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {u.stream || "Student"}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* 🗨️ Chat List */}
       {!isSearching && (
@@ -262,9 +240,11 @@ const ChatList = () => {
                   key={chat._id}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => handleStartChat(otherUser._id)}
-                  className={`flex items-center justify-between gap-3 p-3 rounded-lg cursor-pointer border dark:border-gray-700 bg-white dark:bg-[#121212] hover:bg-gray-100 dark:hover:bg-gray-800 transition ${
-                    hasNew ? "border-blue-500" : ""
-                  }`}
+                  className={`flex items-center justify-between gap-3 p-3 rounded-lg cursor-pointer border ${
+                    isDark
+                      ? "border-gray-700 bg-[#2a2a2a] hover:bg-[#333]"
+                      : "border-gray-200 bg-white hover:bg-gray-100"
+                  } transition ${hasNew ? "border-blue-500" : ""}`}
                 >
                   <div className="flex items-center gap-3">
                     <img
