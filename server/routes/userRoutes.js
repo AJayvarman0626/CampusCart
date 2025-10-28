@@ -18,7 +18,9 @@ import cloudinary from "../config/cloudinary.js";
 
 const router = express.Router();
 
-// ✅ Cloudinary setup
+// ----------------------
+// ☁️ Cloudinary setup
+// ----------------------
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -58,10 +60,10 @@ router.post("/upload", protect, upload.single("profilePic"), (req, res) => {
 // 🔎 SEARCH + PUBLIC USERS
 // ----------------------
 
-// ✅ Public search (accessible to all logged-in users)
+// ✅ Allow all logged-in users to search others
 router.get("/", protect, getAllUsers);
 
-// ✅ Public user detail
+// ✅ Public seller profile
 router.get("/:id", getUserById);
 
 // ----------------------

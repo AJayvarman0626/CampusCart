@@ -1,110 +1,145 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
+import { io } from "socket.io-client";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 
-export default function ChatList() {
-  const { user, authReady } = useAuth();
+const ENDPOINT = "https://campuscart-server.onrender.com"; // ⚙️ backend URL
+
+const ChatList = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(false);
-  const [query, setQuery] = useState("");
-  const [users, setUsers] = useState([]);
   const [chats, setChats] = useState([]);
-  const [loading, setLoading] = useState(true); // 👈 prevent premature render
+  const [searchResults, setSearchResults] = useState([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [unread, setUnread] = useState({});
+  const isDark = document.documentElement.classList.contains("dark");
+  const socket = useRef(null);
 
-  // 🌗 Sync Theme
+  // 🧠 Fetch all existing chats
   useEffect(() => {
-    const updateTheme = () =>
-      setIsDark(document.documentElement.classList.contains("dark"));
-    updateTheme();
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  // 🧠 Load chats when auth is ready
-  useEffect(() => {
-    if (!authReady) return; // wait for auth check
-    if (!user?.token) {
-      console.warn("⚠️ User not logged in — skipping chat fetch");
-      setLoading(false);
-      return;
-    }
-
     const fetchChats = async () => {
       try {
-        console.log("🧩 Fetching chats with token:", user.token.slice(0, 20) + "...");
         const { data } = await api.get("/api/chats", {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setChats(data);
       } catch (error) {
-        console.error("❌ Failed to load chats", error);
-        if (error.response?.status === 403) {
-          toast.error("Session expired. Please log in again.");
-          navigate("/login");
-        } else {
-          toast.error("Unable to load chats 💔");
-        }
+        console.error("❌ Failed to load chats:", error);
       } finally {
         setLoading(false);
       }
     };
+    if (user?.token) fetchChats();
+  }, [user]);
 
-    fetchChats();
-  }, [user, authReady, navigate]);
+  // ⚡ Socket setup
+  useEffect(() => {
+    if (!user?._id) return;
+
+    socket.current = io(ENDPOINT);
+    socket.current.emit("joinChat", user._id);
+
+    socket.current.on("newMessage", (msg) => {
+      // Ignore your own sent message
+      if (msg.sender === user._id) return;
+
+      // Update unread state for receiver
+      setUnread((prev) => ({
+        ...prev,
+        [msg.sender]: true, // mark this sender as "new"
+      }));
+
+      // Update chat list instantly
+      setChats((prevChats) => {
+        let updated = [...prevChats];
+        const chatIndex = updated.findIndex((c) =>
+          c.users.some((u) => u._id === msg.sender)
+        );
+
+        if (chatIndex >= 0) {
+          updated[chatIndex].lastMessage = msg;
+          // Move chat to top
+          const [recent] = updated.splice(chatIndex, 1);
+          updated.unshift(recent);
+        } else {
+          // New chat if doesn't exist
+          updated.unshift({
+            users: [
+              { _id: msg.sender, name: msg.senderName, profilePic: msg.senderPic },
+              { _id: user._id },
+            ],
+            lastMessage: msg,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+
+        return [...updated];
+      });
+    });
+
+    return () => socket.current.disconnect();
+  }, [user]);
 
   // 🔍 Search users
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
 
     try {
+      setIsSearching(true);
       const { data } = await api.get(`/api/users?search=${query}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
-      setUsers(data);
+      setSearchResults(data);
     } catch (error) {
-      console.error("❌ User search failed:", error);
-      toast.error("User search failed");
+      console.error("❌ Search failed:", error);
     }
   };
 
-  // 🌀 Loading / Auth states
-  if (!authReady || loading) {
-    return (
-      <main
-        className={`flex justify-center items-center h-screen ${
-          isDark ? "bg-[#0f0f0f] text-gray-400" : "bg-gray-100 text-gray-700"
-        }`}
-      >
-        <p>Loading your messages...</p>
-      </main>
-    );
-  }
+  // 💬 Open chat
+  const handleStartChat = async (userId) => {
+    try {
+      const { data } = await api.post(
+        "/api/chats",
+        { userId },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      // Remove unread mark
+      setUnread((prev) => {
+        const updated = { ...prev };
+        delete updated[userId];
+        return updated;
+      });
+      navigate(`/chat/${userId}`);
+    } catch (error) {
+      console.error("❌ Failed to access chat:", error);
+    }
+  };
 
-  // 🚫 Not logged in
-  if (!user) {
-    navigate("/login");
-    return null;
-  }
+  if (loading)
+    return (
+      <div className="pt-24 text-center text-gray-500 dark:text-gray-400">
+        Loading chats...
+      </div>
+    );
 
   return (
-    <main
-      className={`pt-24 min-h-screen px-4 flex flex-col items-center transition-all duration-500 ${
-        isDark ? "bg-[#0f0f0f] text-gray-100" : "bg-gray-50 text-gray-900"
-      }`}
-    >
+    <main className="pt-24 min-h-screen px-4 bg-gray-50 dark:bg-[#0f0f0f] text-gray-900 dark:text-gray-100 transition-colors">
+      <h2 className="text-xl font-semibold mb-4">Messages 💬</h2>
+
       {/* 🔍 Search Bar */}
       <form
         onSubmit={handleSearch}
-        className={`flex items-center gap-2 w-full max-w-3xl mb-8
+        className={`flex items-center gap-2 w-full max-w-3xl mb-6
           ${isDark ? "bg-white/10" : "bg-white/90"} backdrop-blur-md
           border ${isDark ? "border-gray-700" : "border-gray-200"}
           rounded-full px-4 py-2 shadow-sm sm:shadow-md transition-all`}
@@ -140,82 +175,101 @@ export default function ChatList() {
         </button>
       </form>
 
-      {/* 💬 Recent Chats */}
-      <div className="w-full max-w-3xl space-y-4">
-        {chats.length === 0 ? (
-          <p className="text-center text-gray-500">
-            No chats yet. Start messaging someone!
+      {/* 🔎 Search Results */}
+      {isSearching && searchResults.length > 0 && (
+        <div className="mb-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+            Search Results:
           </p>
-        ) : (
-          chats.map((chat) => (
-            <motion.div
-              key={chat._id}
-              onClick={() => navigate(`/chat/${chat.otherUser._id}`)}
-              whileHover={{ scale: 1.02 }}
-              className={`p-4 rounded-xl cursor-pointer border shadow-sm transition ${
-                isDark
-                  ? "bg-[#1a1a1a] border-gray-700 hover:bg-[#222]"
-                  : "bg-white border-gray-200 hover:bg-gray-100"
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <img
-                  src={
-                    chat.otherUser.profilePic ||
-                    `https://ui-avatars.com/api/?name=${chat.otherUser.name}`
-                  }
-                  alt={chat.otherUser.name}
-                  className="w-12 h-12 rounded-full border border-gray-300 object-cover"
-                />
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {chat.otherUser.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
-                    {chat.lastMessage?.content || "Tap to start chatting..."}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
-
-      {/* 👥 Searched Users */}
-      {users.length > 0 && (
-        <div className="w-full max-w-3xl mt-8">
-          <h2 className="text-lg font-semibold mb-3">Search Results</h2>
-          {users.map((u) => (
-            <motion.div
-              key={u._id}
-              whileHover={{ scale: 1.02 }}
-              onClick={() => navigate(`/chat/${u._id}`)}
-              className={`p-4 rounded-xl cursor-pointer border shadow-sm transition ${
-                isDark
-                  ? "bg-[#1a1a1a] border-gray-700 hover:bg-[#222]"
-                  : "bg-white border-gray-200 hover:bg-gray-100"
-              }`}
-            >
-              <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3">
+            {searchResults.map((u) => (
+              <motion.div
+                key={u._id}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => handleStartChat(u._id)}
+                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer border dark:border-gray-700 bg-white dark:bg-[#121212] hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              >
                 <img
                   src={
                     u.profilePic ||
-                    `https://ui-avatars.com/api/?name=${u.name}`
+                    `https://ui-avatars.com/api/?name=${u.name}&background=random`
                   }
-                  alt={u.name}
-                  className="w-12 h-12 rounded-full border border-gray-300 object-cover"
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover border"
                 />
                 <div>
-                  <h3 className="font-semibold">{u.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="font-semibold">{u.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {u.stream || "Student"}
                   </p>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 🗨️ Chat List */}
+      {!isSearching && (
+        <div className="flex flex-col gap-3">
+          {chats.length === 0 ? (
+            <p className="text-center text-gray-500 dark:text-gray-400">
+              No messages yet 😶
+            </p>
+          ) : (
+            chats.map((chat) => {
+              const otherUser = chat.users?.find((u) => u._id !== user._id);
+              if (!otherUser) return null;
+
+              const lastMsg = chat.lastMessage?.content || "No messages yet";
+              const hasNew = unread[otherUser._id];
+
+              return (
+                <motion.div
+                  key={chat._id}
+                  whileHover={{ scale: 1.02 }}
+                  onClick={() => handleStartChat(otherUser._id)}
+                  className={`flex items-center justify-between gap-3 p-3 rounded-lg cursor-pointer border dark:border-gray-700 bg-white dark:bg-[#121212] hover:bg-gray-100 dark:hover:bg-gray-800 transition ${
+                    hasNew ? "border-blue-500" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={
+                        otherUser.profilePic ||
+                        `https://ui-avatars.com/api/?name=${otherUser.name}&background=random`
+                      }
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full object-cover border"
+                    />
+                    <div>
+                      <p className="font-semibold flex items-center gap-2">
+                        {otherUser.name}
+                        {hasNew && (
+                          <span className="text-[10px] bg-blue-600 text-white px-2 py-[2px] rounded-full">
+                            NEW
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                        {lastMsg}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    {new Date(chat.updatedAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </motion.div>
+              );
+            })
+          )}
         </div>
       )}
     </main>
   );
-}
+};
+
+export default ChatList;

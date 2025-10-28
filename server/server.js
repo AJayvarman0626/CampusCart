@@ -16,63 +16,64 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// 🧩 Middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-// ✅ Health check
-app.get("/ping", (req, res) => {
-  res.status(200).send("pong 🧠");
-});
-
-// ✅ Root route
-app.get("/", (req, res) => {
-  res.send("CampusCart API running 🛒");
-});
-
-// ✅ API Routes
+// Routes
+app.get("/ping", (req, res) => res.send("pong 🧠"));
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
-app.use("/api/chats", chatRoutes); // 💬 Chat system routes
-
-// ❌ Not found middleware
+app.use("/api/chats", chatRoutes);
 app.use(notFound);
-
-// 🧠 Error handler middleware
 app.use(errorHandler);
 
-// ⚡ Socket.io setup
+// ⚡ SOCKET.IO
 const io = new Server(server, {
   cors: {
-    origin: [
-      "https://campus-cart-lilac.vercel.app",
-      "http://localhost:5173",
-    ],
-    methods: ["GET", "POST"],
+    origin: ["https://campus-cart-lilac.vercel.app", "http://localhost:5173"],
+    methods: ["GET", "POST", "DELETE"],
   },
 });
 
+const onlineUsers = new Map();
+
 io.on("connection", (socket) => {
-  console.log("🟢 New user connected");
+  console.log("🟢 Socket connected:", socket.id);
 
-  socket.on("joinChat", (userId) => {
-    socket.join(userId);
-    console.log(`👤 User joined room: ${userId}`);
+  // 🧠 When user joins
+  socket.on("joinUser", (userId) => {
+    if (!userId) return;
+    onlineUsers.set(userId, socket.id);
+    console.log(`👤 ${userId} online`);
+    io.emit("userStatusUpdate", { userId, status: "online" });
   });
 
+  // 💬 Message send
   socket.on("sendMessage", (msg) => {
-    // Deliver message to both sender & receiver
-    io.to(msg.receiver).emit("newMessage", msg);
-    io.to(msg.sender).emit("newMessage", msg);
+    const { sender, receiver } = msg;
+    console.log(`✉️ Message from ${sender} to ${receiver}`);
+    io.to(onlineUsers.get(receiver)).emit("newMessage", msg);
+    io.to(onlineUsers.get(sender)).emit("messageSentAck", msg);
   });
 
+  // 🧠 When chat opened -> mark seen
+  socket.on("markSeen", ({ chatWith, userId }) => {
+    io.to(onlineUsers.get(chatWith)).emit("messageSeenAck", { seenBy: userId });
+  });
+
+  // 🔴 On disconnect
   socket.on("disconnect", () => {
-    console.log("🔴 User disconnected");
+    const offlineUser = [...onlineUsers.entries()].find(([_, sid]) => sid === socket.id);
+    if (offlineUser) {
+      const [userId] = offlineUser;
+      onlineUsers.delete(userId);
+      io.emit("userStatusUpdate", { userId, status: "offline" });
+      console.log(`🔴 ${userId} offline`);
+    }
   });
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT} (CampusCart Chat Live)`)
-);
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

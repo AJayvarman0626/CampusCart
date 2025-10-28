@@ -1,13 +1,17 @@
 import express from "express";
-import { getChats, accessChat, sendMessage } from "../controllers/chatController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import {
+  getChats,
+  getChatById,
+  accessChat,
+  sendMessage,
+  clearChat,
+} from "../controllers/chatController.js";
 
 const router = express.Router();
 
-// Get all chats for logged-in user / create new
 router.route("/").get(protect, getChats).post(protect, accessChat);
-
-// Send a message
 router.route("/message").post(protect, sendMessage);
+router.route("/:userId").get(protect, getChatById).delete(protect, clearChat);
 
 export default router;

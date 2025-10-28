@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Send, ArrowLeft, MoreVertical, Trash2 } from "lucide-react";
+import { Send, ArrowLeft } from "lucide-react";
 import { io } from "socket.io-client";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
-const ENDPOINT = "https://campuscart-server.onrender.com"; // backend URL
+const ENDPOINT = "https://campuscart-server.onrender.com"; // ✅ backend URL
 
 const ChatPage = () => {
   const { user } = useAuth();
@@ -16,31 +16,33 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState("");
   const [isDark, setIsDark] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const socket = useRef(null);
   const chatEndRef = useRef(null);
 
-  // 🌗 Theme
+  // 🌗 Watch theme mode live
   useEffect(() => {
     const updateTheme = () =>
       setIsDark(document.documentElement.classList.contains("dark"));
     updateTheme();
     const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
     return () => observer.disconnect();
   }, []);
 
-  // 🧠 Fetch receiver & messages
+  // 🧠 Fetch receiver + chat messages
   useEffect(() => {
+    if (!user || !user.token) return;
+
     const fetchChat = async () => {
       try {
-        const { data: receiverData } = await api.get(`/api/users/${id}`);
-        setReceiver(receiverData);
-
-        const { data: messagesData } = await api.get(`/api/chats/${id}`, {
+        const { data } = await api.get(`/api/chats/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
-        setMessages(messagesData);
+        setReceiver(data.receiver);
+        setMessages(data.messages || []);
       } catch (error) {
         console.error("Chat load failed", error);
       }
@@ -50,10 +52,13 @@ const ChatPage = () => {
 
   // ⚡ Socket setup
   useEffect(() => {
+    if (!user?._id) return;
+
     socket.current = io(ENDPOINT);
     socket.current.emit("joinChat", user._id);
 
     socket.current.on("newMessage", (msg) => {
+      if (msg.sender === user._id) return;
       if (msg.sender === id || msg.receiver === id) {
         setMessages((prev) => [...prev, msg]);
       }
@@ -64,7 +69,7 @@ const ChatPage = () => {
     };
   }, [id, user]);
 
-  // 🧹 Scroll down on message
+  // 🧹 Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -81,30 +86,28 @@ const ChatPage = () => {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages([...messages, message]);
+    setMessages((prev) => [...prev, message]);
     setNewMsg("");
 
     socket.current.emit("sendMessage", message);
 
     try {
-      await api.post(`/api/chats/${id}`, message, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
+      await api.post(
+        `/api/chats/message`,
+        { content: newMsg, receiver: id },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
     } catch (error) {
-      console.error("Failed to send message", error);
+      console.error("❌ Failed to send message:", error);
     }
   };
 
-  // 🧨 Clear chat
-  const clearChat = async () => {
-    if (!window.confirm("Clear entire chat?")) return;
-    try {
-      await api.delete(`/api/chats/${id}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setMessages([]);
-    } catch (err) {
-      console.error("Failed to clear chat", err);
+  // 👤 Navigate to seller profile
+  const handleProfileClick = () => {
+    if (receiver?._id) {
+      navigate(`/seller/${receiver._id}`);
     }
   };
 
@@ -116,14 +119,18 @@ const ChatPage = () => {
     >
       {/* 🔝 Header */}
       <div
-        className={`flex items-center justify-between px-4 py-3 border-b ${
+        className={`flex items-center justify-between px-4 py-3 border-b cursor-pointer ${
           isDark ? "border-gray-700 bg-[#121212]" : "border-gray-300 bg-white"
         }`}
+        onClick={handleProfileClick}
       >
         <div className="flex items-center gap-3">
           <ArrowLeft
             className="cursor-pointer"
-            onClick={() => navigate("/messages")}
+            onClick={(e) => {
+              e.stopPropagation(); // prevent triggering profile navigation
+              navigate("/messages");
+            }}
           />
           <img
             src={
@@ -139,28 +146,6 @@ const ChatPage = () => {
               {receiver?.stream || "Student"}
             </p>
           </div>
-        </div>
-        <div className="relative">
-          <MoreVertical
-            className="cursor-pointer"
-            onClick={() => setMenuOpen(!menuOpen)}
-          />
-          {menuOpen && (
-            <div
-              className={`absolute right-0 mt-2 rounded-lg shadow-lg border text-sm ${
-                isDark
-                  ? "bg-[#1a1a1a] border-gray-700 text-gray-100"
-                  : "bg-white border-gray-300 text-gray-800"
-              }`}
-            >
-              <button
-                onClick={clearChat}
-                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 w-full text-left"
-              >
-                <Trash2 size={14} /> Clear Chat
-              </button>
-            </div>
-          )}
         </div>
       </div>
 

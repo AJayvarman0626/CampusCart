@@ -72,14 +72,28 @@ const ProductDetails = () => {
     }
   };
 
-  // 💬 Direct Message Seller
-  const handleMessageSeller = () => {
+  // 💬 Direct Message Seller (navigate to real chat)
+  const handleMessageSeller = async () => {
     if (!user) {
       toast.error("Please log in to message the seller ⚡");
       navigate("/login");
       return;
     }
-    navigate(`/chat/new?seller=${product.seller._id}`);
+
+    try {
+      // ✅ Create or get the chat from backend
+      const { data } = await api.post(
+        "/api/chats",
+        { userId: product.seller._id },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      // 👇 Navigate directly to chat page of that seller
+      navigate(`/chat/${product.seller._id}`);
+    } catch (err) {
+      console.error("Failed to open chat:", err);
+      toast.error("Unable to start chat 💬");
+    }
   };
 
   if (loading) {

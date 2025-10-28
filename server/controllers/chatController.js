@@ -15,7 +15,7 @@ export const getChats = asyncHandler(async (req, res) => {
     })
     .sort({ updatedAt: -1 });
 
-  res.json(chats);
+  res.status(200).json(chats);
 });
 
 // 💬 Create or get chat between two users
@@ -34,14 +34,43 @@ export const accessChat = asyncHandler(async (req, res) => {
     chat = await Chat.findById(chat._id).populate("users", "name profilePic");
   }
 
-  res.json(chat);
+  res.status(200).json(chat);
 });
 
-// 📨 Send a message
+// 💬 Get a full chat with messages (GET /api/chats/:userId)
+export const getChatById = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  if (!userId) return res.status(400).json({ message: "User ID required" });
+
+  let chat = await Chat.findOne({
+    users: { $all: [req.user._id, userId] },
+  });
+
+  if (!chat) {
+    chat = await Chat.create({ users: [req.user._id, userId] });
+  }
+
+  const messages = await Message.find({
+    $or: [
+      { sender: req.user._id, receiver: userId },
+      { sender: userId, receiver: req.user._id },
+    ],
+  }).sort({ createdAt: 1 });
+
+  const receiver = await User.findById(userId).select("name email profilePic stream");
+
+  res.status(200).json({
+    chat,
+    receiver,
+    messages,
+  });
+});
+
+// 📨 Send a message (POST /api/chats/message)
 export const sendMessage = asyncHandler(async (req, res) => {
   const { content, receiver } = req.body;
   if (!content || !receiver)
-    return res.status(400).send("Missing content or receiver");
+    return res.status(400).json({ message: "Missing content or receiver" });
 
   const message = await Message.create({
     sender: req.user._id,
@@ -49,10 +78,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     content,
   });
 
-  let chat = await Chat.findOne({
-    users: { $all: [req.user._id, receiver] },
-  });
-
+  let chat = await Chat.findOne({ users: { $all: [req.user._id, receiver] } });
   if (!chat) {
     chat = await Chat.create({ users: [req.user._id, receiver] });
   }
@@ -60,5 +86,19 @@ export const sendMessage = asyncHandler(async (req, res) => {
   chat.lastMessage = message._id;
   await chat.save();
 
-  res.json(message);
+  res.status(201).json(message);
+});
+
+// 🧹 Clear chat (DELETE /api/chats/:userId)
+export const clearChat = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  await Message.deleteMany({
+    $or: [
+      { sender: req.user._id, receiver: userId },
+      { sender: userId, receiver: req.user._id },
+    ],
+  });
+
+  res.status(200).json({ message: "Chat cleared successfully" });
 });
