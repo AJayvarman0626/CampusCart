@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import cartLogo from "../assets/white.png"; // 🛒 make sure the path is correct
+import cartLogo from "../assets/cart.png"; // 🛒 make sure the path is correct
 
 const Loader = () => {
   const [showLoader, setShowLoader] = useState(true);
