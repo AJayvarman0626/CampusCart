@@ -1,0 +1,21 @@
+{
+  "name": "CampusCart",
+  "short_name": "CampusCart",
+  "description": "Your campus marketplace — buy, sell, or share essentials.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/nav-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/nav-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
