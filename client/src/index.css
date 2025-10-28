@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* 🎨 Force Manual Theme Control (no device auto dark/light) */
+:root {
+  color-scheme: light; /* Default = light */
+}
+
+html.dark {
+  color-scheme: dark; /* When manually toggled */
+}
+
 /* 🌑 Global Styles */
 body {
   font-family: "Inter", sans-serif;
@@ -38,6 +47,7 @@ main,
 html {
   scroll-behavior: smooth;
 }
+
 ::selection {
   background: #3b3b3b;
   color: #ffffff;
@@ -47,13 +57,17 @@ html {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(to bottom, #3b3b3b, #6b6b6b);
   border-radius: 8px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(to bottom, #505050, #7a7a7a);
 }
+
+/* ✨ Fade-in Animation */
 @keyframes fadeIn {
   from {
     opacity: 0;
