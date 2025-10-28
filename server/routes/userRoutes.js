@@ -9,7 +9,7 @@ import {
   unbanUser,
   googleRegister,
   googleLogin,
-  getUserById, // 👈 added
+  getUserById,
 } from "../controllers/userController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import multer from "multer";
@@ -28,7 +28,9 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-// ✅ Auth routes
+// ----------------------
+// 🧠 AUTH ROUTES
+// ----------------------
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
@@ -36,11 +38,15 @@ router.post("/login", loginUser);
 router.post("/google/register", googleRegister);
 router.post("/google/login", googleLogin);
 router.post("/google-register", googleRegister); // alias
-router.post("/google-login", googleLogin);       // alias
+router.post("/google-login", googleLogin); // alias
 
-// ✅ Profile routes (Protected)
+// ----------------------
+// 👤 USER PROFILE ROUTES
+// ----------------------
 router.get("/profile", protect, getUserProfile);
 router.put("/profile", protect, updateUserProfile);
+
+// ✅ Upload profile picture
 router.post("/upload", protect, upload.single("profilePic"), (req, res) => {
   if (!req.file || !req.file.path) {
     return res.status(400).json({ message: "No file uploaded" });
@@ -48,12 +54,30 @@ router.post("/upload", protect, upload.single("profilePic"), (req, res) => {
   res.status(200).json({ imageUrl: req.file.path });
 });
 
-// ✅ Admin routes
-router.get("/", protect, admin, getAllUsers);
+// ----------------------
+// 🔎 SEARCH + PUBLIC USERS
+// ----------------------
+
+// ✅ Public search (accessible to all logged-in users)
+router.get("/", protect, getAllUsers);
+
+// ✅ Public user detail
+router.get("/:id", getUserById);
+
+// ----------------------
+// 🧱 ADMIN ROUTES
+// ----------------------
 router.put("/ban/:id", protect, admin, banUser);
 router.put("/unban/:id", protect, admin, unbanUser);
 
-// ✅ Public route — Seller Profile
-router.get("/:id", getUserById);
+// ----------------------
+// 🧩 TOKEN VERIFY (Debug)
+// ----------------------
+router.get("/verify", protect, (req, res) => {
+  res.json({
+    message: "✅ Token valid",
+    user: req.user,
+  });
+});
 
 export default router;

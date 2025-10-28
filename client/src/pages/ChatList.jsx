@@ -7,12 +7,13 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 export default function ChatList() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState([]);
   const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true); // 👈 prevent premature render
 
   // 🌗 Sync Theme
   useEffect(() => {
@@ -27,35 +28,72 @@ export default function ChatList() {
     return () => observer.disconnect();
   }, []);
 
-  // 🧠 Load existing chats
+  // 🧠 Load chats when auth is ready
   useEffect(() => {
+    if (!authReady) return; // wait for auth check
+    if (!user?.token) {
+      console.warn("⚠️ User not logged in — skipping chat fetch");
+      setLoading(false);
+      return;
+    }
+
     const fetchChats = async () => {
       try {
+        console.log("🧩 Fetching chats with token:", user.token.slice(0, 20) + "...");
         const { data } = await api.get("/api/chats", {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         setChats(data);
       } catch (error) {
         console.error("❌ Failed to load chats", error);
-        toast.error("Unable to load chats 💔");
+        if (error.response?.status === 403) {
+          toast.error("Session expired. Please log in again.");
+          navigate("/login");
+        } else {
+          toast.error("Unable to load chats 💔");
+        }
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchChats();
-  }, [user]);
+  }, [user, authReady, navigate]);
 
   // 🔍 Search users
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
+
     try {
       const { data } = await api.get(`/api/users?search=${query}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       setUsers(data);
     } catch (error) {
+      console.error("❌ User search failed:", error);
       toast.error("User search failed");
     }
   };
+
+  // 🌀 Loading / Auth states
+  if (!authReady || loading) {
+    return (
+      <main
+        className={`flex justify-center items-center h-screen ${
+          isDark ? "bg-[#0f0f0f] text-gray-400" : "bg-gray-100 text-gray-700"
+        }`}
+      >
+        <p>Loading your messages...</p>
+      </main>
+    );
+  }
+
+  // 🚫 Not logged in
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
 
   return (
     <main
@@ -63,7 +101,7 @@ export default function ChatList() {
         isDark ? "bg-[#0f0f0f] text-gray-100" : "bg-gray-50 text-gray-900"
       }`}
     >
-      {/* 🔍 Search Bar (same as homepage style) */}
+      {/* 🔍 Search Bar */}
       <form
         onSubmit={handleSearch}
         className={`flex items-center gap-2 w-full max-w-3xl mb-8

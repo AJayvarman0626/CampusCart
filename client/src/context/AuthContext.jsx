@@ -3,9 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("campusUser")) || null
-  );
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false); // 👈 added
 
   const login = (data) => {
     setUser(data);
@@ -17,24 +16,24 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("campusUser");
   };
 
+  // ✅ Load user from localStorage on app start
   useEffect(() => {
-    const storedUser = localStorage.getItem("campusUser");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const stored = localStorage.getItem("campusUser");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setUser(parsed);
+      console.log("🧠 Loaded user from localStorage:", parsed);
+    } else {
+      console.log("⚠️ No stored user found");
     }
+    setAuthReady(true); // ✅ ensure ready state
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, authReady }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// ✅ Custom hook to use AuthContext
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context)
-    throw new Error("useAuth must be used within an AuthProvider");
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
