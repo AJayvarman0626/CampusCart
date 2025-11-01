@@ -1,7 +1,7 @@
 {
   "name": "CampusCart",
   "short_name": "CampusCart",
-  "description": "Your campus marketplace for books, notes, lab coats and gadgets",
+  "description": "Your campus marketplace for books, notes, lab coats, and gadgets",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
