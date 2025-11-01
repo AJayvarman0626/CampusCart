@@ -16,11 +16,11 @@ const router = express.Router();
 // 🧠 In-memory multer (for Cloudinary buffer uploads)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ✅ Image Upload
+// ✅ Image Upload (private)
 router.post("/upload", protect, upload.single("image"), uploadProductImage);
 
-// ✅ Product by Seller
-router.get("/seller/:id", getProductsBySeller); // 👈 must come before :id route
+// ✅ Product by Seller (must come before /:id)
+router.get("/seller/:id", getProductsBySeller);
 
 // ✅ Product Routes
 router.get("/", getProducts);

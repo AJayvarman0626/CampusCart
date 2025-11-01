@@ -3,10 +3,10 @@ import cloudinary from "../config/cloudinary.js";
 
 /**
  * ✅ Upload Product Image
- * @route POST /api/products/upload
- * @access Private
+ * POST /api/products/upload
+ * Private
  */
-export const uploadProductImage = async (req, res) => {
+export const uploadProductImage = async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -23,14 +23,14 @@ export const uploadProductImage = async (req, res) => {
     res.status(200).json({ url: uploadResult.secure_url });
   } catch (error) {
     console.error("❌ Product image upload failed:", error);
-    res.status(500).json({ message: "Cloudinary upload failed" });
+    return res.status(500).json({ message: "Cloudinary upload failed", error: error.message });
   }
 };
 
 /**
  * ✅ Get all products (search, sort, pagination)
- * @route GET /api/products
- * @access Public
+ * GET /api/products
+ * Public
  */
 export const getProducts = async (req, res, next) => {
   try {
@@ -75,8 +75,8 @@ export const getProducts = async (req, res, next) => {
 
 /**
  * ✅ Get products by specific seller
- * @route GET /api/products/seller/:id
- * @access Public
+ * GET /api/products/seller/:id
+ * Public
  */
 export const getProductsBySeller = async (req, res, next) => {
   try {
@@ -95,34 +95,48 @@ export const getProductsBySeller = async (req, res, next) => {
 
 /**
  * ✅ Create a new product
- * @route POST /api/products
- * @access Private
+ * POST /api/products
+ * Private
  */
 export const createProduct = async (req, res, next) => {
   try {
     const { name, description, price, category, image } = req.body;
 
-    if (!name || !description || !price || !category) {
-      return res.status(400).json({ message: "All fields are required" });
+    // basic validation
+    if (!name || !description || price === undefined || !category) {
+      return res.status(400).json({ message: "All fields (name, description, price, category) are required" });
+    }
+
+    // parse price
+    const parsedPrice = Number(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ message: "Invalid price" });
     }
 
     const seller = req.user._id;
-    let uploadedImageUrl = "";
+    let finalImageUrl = "";
 
-    if (image) {
-      const uploadResult = await cloudinary.uploader.upload(image, {
-        folder: "CampusCart/Products",
-        resource_type: "auto",
-      });
-      uploadedImageUrl = uploadResult.secure_url;
+    // If the client sent a data URI (starts with "data:"), upload to Cloudinary.
+    // If client passed a remote/cloudinary URL, keep it.
+    if (image && typeof image === "string") {
+      if (image.startsWith("data:")) {
+        const uploadResult = await cloudinary.uploader.upload(image, {
+          folder: "CampusCart/Products",
+          resource_type: "auto",
+        });
+        finalImageUrl = uploadResult.secure_url;
+      } else {
+        // assume the URL is usable (could be a direct cloudinary URL or other host)
+        finalImageUrl = image;
+      }
     }
 
     const product = await Product.create({
-      name,
-      description,
-      price,
+      name: name.trim(),
+      description: description.trim(),
+      price: parsedPrice,
       category,
-      image: uploadedImageUrl,
+      image: finalImageUrl || undefined,
       seller,
     });
 
@@ -143,8 +157,8 @@ export const createProduct = async (req, res, next) => {
 
 /**
  * ✅ Get single product
- * @route GET /api/products/:id
- * @access Public
+ * GET /api/products/:id
+ * Public
  */
 export const getProductById = async (req, res, next) => {
   try {
@@ -166,14 +180,13 @@ export const getProductById = async (req, res, next) => {
 
 /**
  * ✅ Update product
- * @route PUT /api/products/:id
- * @access Private
+ * PUT /api/products/:id
+ * Private (seller only)
  */
 export const updateProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product)
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     if (product.seller.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
@@ -181,23 +194,51 @@ export const updateProduct = async (req, res, next) => {
 
     const { name, description, price, category, image, isSold } = req.body;
 
-    product.name = name || product.name;
-    product.description = description || product.description;
-    product.price = price || product.price;
-    product.category = category || product.category;
-    product.isSold = isSold ?? product.isSold;
+    if (name) product.name = name.trim();
+    if (description) product.description = description.trim();
+    if (price !== undefined) {
+      const parsedPrice = Number(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        return res.status(400).json({ message: "Invalid price" });
+      }
+      product.price = parsedPrice;
+    }
+    if (category) product.category = category;
+    product.isSold = isSold !== undefined ? Boolean(isSold) : product.isSold;
 
+    // If new image provided and different from existing:
     if (image && image !== product.image) {
-      if (product.image && product.image.includes("res.cloudinary.com")) {
-        const publicId = product.image.split("/").pop().split(".")[0];
-        await cloudinary.uploader.destroy(`CampusCart/Products/${publicId}`);
+      // Delete old image from cloudinary if it looks like a cloudinary URL
+      try {
+        if (product.image && product.image.includes("res.cloudinary.com")) {
+          // get public id path after '/upload/'
+          const parts = product.image.split("/upload/");
+          if (parts.length > 1) {
+            const afterUpload = parts[1];
+            // strip extension and any query params
+            const publicId = afterUpload.split(".")[0].split("?")[0];
+            if (publicId) {
+              await cloudinary.uploader.destroy(publicId, { resource_type: "image" }).catch((e) => {
+                // don't crash on delete failure; log it
+                console.warn("Cloudinary destroy warning:", e.message || e);
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to remove old Cloudinary image:", err.message || err);
       }
 
-      const uploadResult = await cloudinary.uploader.upload(image, {
-        folder: "CampusCart/Products",
-        resource_type: "auto",
-      });
-      product.image = uploadResult.secure_url;
+      // If incoming image is data URI -> upload; else keep URL
+      if (typeof image === "string" && image.startsWith("data:")) {
+        const uploadResult = await cloudinary.uploader.upload(image, {
+          folder: "CampusCart/Products",
+          resource_type: "auto",
+        });
+        product.image = uploadResult.secure_url;
+      } else {
+        product.image = image;
+      }
     }
 
     const updatedProduct = await product.save();
@@ -215,22 +256,34 @@ export const updateProduct = async (req, res, next) => {
 
 /**
  * ✅ Delete product
- * @route DELETE /api/products/:id
- * @access Private
+ * DELETE /api/products/:id
+ * Private (seller only)
  */
 export const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product)
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     if (product.seller.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    if (product.image && product.image.includes("res.cloudinary.com")) {
-      const publicId = product.image.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(`CampusCart/Products/${publicId}`);
+    // delete cloudinary asset if present
+    try {
+      if (product.image && product.image.includes("res.cloudinary.com")) {
+        const parts = product.image.split("/upload/");
+        if (parts.length > 1) {
+          const afterUpload = parts[1];
+          const publicId = afterUpload.split(".")[0].split("?")[0];
+          if (publicId) {
+            await cloudinary.uploader.destroy(publicId, { resource_type: "image" }).catch((e) => {
+              console.warn("Cloudinary destroy warning:", e.message || e);
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to remove Cloudinary image on delete:", err.message || err);
     }
 
     await product.deleteOne();

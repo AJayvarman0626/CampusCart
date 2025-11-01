@@ -27,7 +27,6 @@ const SellerDashboard = () => {
     const updateTheme = () =>
       setIsDark(document.documentElement.classList.contains("dark"));
     updateTheme();
-
     const observer = new MutationObserver(updateTheme);
     observer.observe(document.documentElement, {
       attributes: true,
@@ -119,7 +118,7 @@ const SellerDashboard = () => {
     }
   };
 
-  // 🗑️ Delete
+  // 🗑️ Delete Product
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
@@ -135,7 +134,7 @@ const SellerDashboard = () => {
     }
   };
 
-  // ✏️ Edit
+  // ✏️ Edit Product
   const handleEdit = (p) => {
     setEditingId(p._id);
     setProduct({
@@ -152,7 +151,7 @@ const SellerDashboard = () => {
   // ✅ Mark as Sold
   const markAsSold = async (id) => {
     try {
-      const { data } = await api.put(
+      await api.put(
         `/api/products/${id}`,
         { isSold: true },
         { headers: { Authorization: `Bearer ${user.token}` } }
@@ -171,7 +170,7 @@ const SellerDashboard = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center px-4 pt-24 pb-10 transition-colors duration-500 ${
+      className={`min-h-screen flex flex-col items-center px-4 pt-24 pb-28 sm:pb-16 transition-colors duration-500 ${
         isDark ? "bg-[#0f0f0f] text-gray-100" : "bg-white text-gray-900"
       }`}
     >
@@ -185,9 +184,7 @@ const SellerDashboard = () => {
             : "bg-white/80 border-gray-200"
         }`}
       >
-        <h2 className="text-2xl font-bold mb-6 text-center">
-          Seller Dashboard
-        </h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Seller Dashboard</h2>
 
         {/* 🧾 Upload/Edit Form */}
         <form onSubmit={handleSubmit} className="space-y-5 mb-10">
@@ -196,10 +193,10 @@ const SellerDashboard = () => {
             placeholder="Product Name"
             value={product.name}
             onChange={(e) => setProduct({ ...product, name: e.target.value })}
-            className={`w-full p-2 rounded-lg border outline-none ${
+            className={`w-full p-3 rounded-xl border outline-none focus:ring-2 ${
               isDark
-                ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400"
-                : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"
+                ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-gray-600"
+                : "bg-gray-100 border-gray-300 text-gray-800 focus:ring-gray-400"
             }`}
             required
           />
@@ -210,10 +207,10 @@ const SellerDashboard = () => {
             onChange={(e) =>
               setProduct({ ...product, description: e.target.value })
             }
-            className={`w-full p-2 rounded-lg border outline-none ${
+            className={`w-full p-3 rounded-xl border outline-none focus:ring-2 ${
               isDark
-                ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400"
-                : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"
+                ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-gray-600"
+                : "bg-gray-100 border-gray-300 text-gray-800 focus:ring-gray-400"
             }`}
           ></textarea>
 
@@ -222,32 +219,41 @@ const SellerDashboard = () => {
               type="number"
               placeholder="Price ₹"
               value={product.price}
-              onChange={(e) => setProduct({ ...product, price: e.target.value })}
-              className={`w-full p-2 rounded-lg border outline-none ${
+              onChange={(e) =>
+                setProduct({ ...product, price: e.target.value })
+              }
+              className={`w-full p-3 rounded-xl border outline-none focus:ring-2 ${
                 isDark
-                  ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400"
-                  : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"
+                  ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-gray-600"
+                  : "bg-gray-100 border-gray-300 text-gray-800 focus:ring-gray-400"
               }`}
               required
             />
 
-            <select
-              value={product.category}
-              onChange={(e) =>
-                setProduct({ ...product, category: e.target.value })
-              }
-              className={`w-full p-2 rounded-lg border outline-none ${
-                isDark
-                  ? "bg-gray-800 border-gray-700 text-gray-100"
-                  : "bg-gray-100 border-gray-300 text-gray-800"
-              }`}
-              required
-            >
-              <option value="">Select Category</option>
-              <option value="Books">Books</option>
-              <option value="Notes">Notes</option>
-              <option value="Gadgets">Gadgets</option>
-            </select>
+            {/* 🎨 Category Dropdown (Aesthetic + Fixed Lab Coat) */}
+            <div className="relative">
+              <select
+                value={product.category}
+                onChange={(e) =>
+                  setProduct({ ...product, category: e.target.value })
+                }
+                className={`w-full appearance-none p-3 rounded-xl border font-medium focus:ring-2 ${
+                  isDark
+                    ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-gray-600"
+                    : "bg-gray-100 border-gray-300 text-gray-800 focus:ring-gray-400"
+                }`}
+                required
+              >
+                <option value="">Select Category</option>
+                <option value="Books">📚 Books</option>
+                <option value="Notes">🧾 Notes</option>
+                <option value="Gadgets">⚙️ Gadgets</option>
+                <option value="Lab Coat">🥼 Lab Coat</option> {/* ✅ Fixed */}
+              </select>
+              <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none">
+                ▼
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -262,7 +268,7 @@ const SellerDashboard = () => {
               type="button"
               onClick={() => fileInputRef.current.click()}
               disabled={uploading}
-              className={`px-4 py-2 rounded-md font-semibold transition-all ${
+              className={`px-5 py-2 rounded-xl font-semibold transition-all ${
                 isDark
                   ? "bg-gray-100 text-black hover:bg-gray-200"
                   : "bg-gray-900 text-white hover:bg-gray-800"

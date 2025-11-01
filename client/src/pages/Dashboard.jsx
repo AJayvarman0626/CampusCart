@@ -124,13 +124,11 @@ const Dashboard = () => {
     navigate("/login");
   };
 
-  const handleSeller = () => {
-    navigate("/seller-dashboard");
-  };
+  const handleSeller = () => navigate("/seller-dashboard");
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-center px-4 pt-24 transition-colors duration-500 ${
+      className={`min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-28 sm:pb-16 transition-colors duration-500 ${
         isDark ? "bg-[#0f0f0f] text-gray-100" : "bg-white text-gray-900"
       }`}
     >

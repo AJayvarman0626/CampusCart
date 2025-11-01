@@ -21,14 +21,14 @@ const productSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: [true, "Price is required"],
-      min: [0, "Price must be greater than 0"],
+      min: [0, "Price must be >= 0"],
     },
 
-    // 📚 Category
+    // 📚 Category — added Lab Coat
     category: {
       type: String,
       required: [true, "Category is required"],
-      enum: ["Books", "Notes", "Gadgets"],
+      enum: ["Books", "Notes", "Gadgets", "Lab Coat"],
     },
 
     // 🖼️ Product Image (Cloudinary URL)
@@ -60,14 +60,18 @@ const productSchema = new mongoose.Schema(
 
 // 🌐 Virtual: Shortened description
 productSchema.virtual("shortDescription").get(function () {
-  return this.description.length > 80
+  return this.description && this.description.length > 80
     ? this.description.substring(0, 80) + "..."
     : this.description;
 });
 
 // 🧮 Virtual: Formatted price display (e.g., ₹500)
 productSchema.virtual("formattedPrice").get(function () {
-  return `₹${this.price.toLocaleString("en-IN")}`;
+  try {
+    return `₹${Number(this.price).toLocaleString("en-IN")}`;
+  } catch {
+    return `₹${this.price}`;
+  }
 });
 
 const Product = mongoose.model("Product", productSchema);
