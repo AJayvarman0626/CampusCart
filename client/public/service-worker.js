@@ -1,18 +1,20 @@
 self.addEventListener("install", (event) => {
-  console.log("📦 CampusCart Service Worker installing...");
-  event.waitUntil(
-    caches.open("campuscart-v1").then((cache) =>
-      cache.addAll(["/", "/index.html", "/manifest.json", "/nav-icon.png"])
-    )
-  );
+  console.log("✅ Service Worker Installed");
+});
+
+self.addEventListener("activate", (event) => {
+  console.log("🔥 Service Worker Activated");
 });
 
 self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
+    caches.match(event.request).then((response) => {
+      return (
+        response ||
+        fetch(event.request).catch(() =>
+          caches.match("/offline.html")
+        )
+      );
+    })
   );
-});
-
-self.addEventListener("activate", () => {
-  console.log("✅ CampusCart Service Worker activated!");
 });
